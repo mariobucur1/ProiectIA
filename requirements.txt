@@ -1,0 +1,17 @@
+# ===== Componenta TSP (tsp-app) =====
+PyQt6>=6.6.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+requests>=2.31.0
+
+# ===== Componenta CoppeliaSim (coppeliasim-sim) =====
+coppeliasim-zmqremoteapi-client>=2.0.0
+
+# ===== Testare =====
+pytest>=8.0.0
+pytest-qt>=4.4.0
+
+# ===== Notebooks (opțional, pentru raport) =====
+jupyter>=1.0.0
+pandas>=2.2.0
+seaborn>=0.13.0
