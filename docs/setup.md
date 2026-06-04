@@ -33,11 +33,12 @@ pip install -r requirements.txt
 
 Pachete instalate:
 - **PyQt6** — GUI pentru TSP
-- **NumPy** — calcule vectoriale (matrice de distanțe, operații pe tururi)
-- **Matplotlib** — grafice de convergență
-- **requests** — încărcare seturi de date de pe GitHub
+- **NumPy** — calcule vectoriale (matrice de distanțe, operații pe tururi, Q-learning)
+- **Matplotlib** — grafice de convergență + curbă de învățare RL
+- **requests** — încărcare seturi de date de pe GitHub **și** asistentul AI (Google Gemini, REST)
 - **coppeliasim-zmqremoteapi-client** — comunicare cu CoppeliaSim
-- **scipy** — dilatarea obstacolelor (opțional, dar recomandat)
+- **opencv-python** — captură Vision_sensor + detecție waypoints (componenta robot)
+- **scipy** — dilatarea obstacolelor (opțional; există fallback NumPy fără el)
 - **pytest** + **pytest-qt** — testare
 
 ## 4. CoppeliaSim
@@ -63,7 +64,26 @@ Dacă apare o eroare de conexiune:
 - Verifică în log-ul CoppeliaSim: trebuie să apară `ZMQ server started on port 23000`
 - Verifică firewall-ul Windows (permite Python prin firewall).
 
-## 5. Visual Studio Code (recomandat)
+## 5. Cheie API pentru asistentul AI (Google Gemini)
+
+Aplicația TSP are un asistent AI (panoul `🤖 Asistent AI`) bazat pe **Google Gemini**. Cheia se obține gratuit de la [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+
+Configurarea (cheia **nu** se versionează în Git):
+
+1. Copiază `tsp-app/llm_config.example.json` ca `tsp-app/llm_config.local.json`.
+2. Completează:
+   ```json
+   {
+     "api_key": "AIza...",
+     "model": "gemini-2.5-flash-lite"
+   }
+   ```
+
+Alternativ, setează variabila de mediu `GEMINI_API_KEY` (și opțional `GEMINI_MODEL`).
+
+> Modelul `gemini-2.5-flash-lite` funcționează pe nivelul gratuit. Dacă apare eroare `429 / quota`, încearcă alt model gratuit (vezi `GeminiClient.list_models()`). Fără cheie, restul aplicației TSP funcționează normal — doar asistentul e dezactivat.
+
+## 6. Visual Studio Code (recomandat)
 
 Pentru editare cod, descarcă [VS Code](https://code.visualstudio.com/) și instalează extensiile:
 - **Python** (Microsoft)
@@ -73,7 +93,7 @@ Apoi: `File → Open Folder → D:\ProiectIA`.
 
 VS Code va detecta automat mediul virtual `.venv` și-l va activa în terminal.
 
-## 6. Git și GitHub
+## 7. Git și GitHub
 
 ```powershell
 git --version  # verifică instalarea
@@ -94,20 +114,32 @@ git branch -M main
 git push -u origin main
 ```
 
-## 7. Smoke test (verificare rapidă)
+## 8. Smoke test (verificare rapidă)
 
-După instalare, testează că totul funcționează:
+După instalare, testează că tot funcționează:
 
 ```powershell
 cd D:\ProiectIA\tsp-app
+pytest tests/ -v
+
+cd D:\ProiectIA\coppeliasim-sim
 pytest tests/ -v
 ```
 
 Toate testele trebuie să treacă (✓ verde).
 
-Pentru un test vizual al GUI-ului:
+Pentru un test vizual al GUI-ului TSP:
 ```powershell
+cd D:\ProiectIA\tsp-app
 python -m src.main
 ```
 
 Se va deschide fereastra principală. Încarcă `data/simple_5.csv` și rulează Backtracking — ar trebui să găsești optimul în ~1 secundă.
+
+Pentru componenta robot — antrenarea RL nu necesită CoppeliaSim (rulează headless):
+```powershell
+cd D:\ProiectIA\coppeliasim-sim
+python -m src.rl.train --episodes 2000
+```
+
+Ar trebui să afișeze rată de succes 100% și drumul învățat în ASCII. Pentru a vedea robotul real parcurgând labirintul, deschide `scenes/Arena.ttt` în CoppeliaSim, pornește simularea și rulează `python -m src.rl.deploy`.

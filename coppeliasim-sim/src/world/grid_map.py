@@ -127,10 +127,30 @@ class GridMap:
         """
         if radius_cells <= 0:
             return
-        from scipy.ndimage import binary_dilation  # type: ignore[import-not-found]
+        try:
+            from scipy.ndimage import binary_dilation  # type: ignore[import-not-found]
 
-        structure = np.ones((2 * radius_cells + 1, 2 * radius_cells + 1), dtype=bool)
-        self._occupancy = binary_dilation(self._occupancy, structure=structure)
+            structure = np.ones((2 * radius_cells + 1, 2 * radius_cells + 1), dtype=bool)
+            self._occupancy = binary_dilation(self._occupancy, structure=structure)
+        except ImportError:
+            self._occupancy = self._dilate_numpy(self._occupancy, radius_cells)
+
+    @staticmethod
+    def _dilate_numpy(occ: np.ndarray, radius: int) -> np.ndarray:
+        """Dilatare binară (Chebyshev) fără scipy — shift-uri pe matrice numpy."""
+        out = occ.copy()
+        for dr in range(-radius, radius + 1):
+            for dc in range(-radius, radius + 1):
+                if dr == 0 and dc == 0:
+                    continue
+                shifted = np.zeros_like(occ)
+                r_src = slice(max(0, -dr), occ.shape[0] - max(0, dr))
+                r_dst = slice(max(0, dr), occ.shape[0] - max(0, -dr))
+                c_src = slice(max(0, -dc), occ.shape[1] - max(0, dc))
+                c_dst = slice(max(0, dc), occ.shape[1] - max(0, -dc))
+                shifted[r_dst, c_dst] = occ[r_src, c_src]
+                out |= shifted
+        return out
 
     @classmethod
     def from_array(

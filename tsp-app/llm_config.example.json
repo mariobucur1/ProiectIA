@@ -1,0 +1,5 @@
+{
+  "_comment": "Copiază acest fișier ca llm_config.local.json și pune cheia ta de la Google AI Studio (https://aistudio.google.com/apikey). Fișierul .local.json este în .gitignore și NU ajunge în Git.",
+  "api_key": "AIza...PUNE_CHEIA_TA_AICI",
+  "model": "gemini-2.5-flash-lite"
+}

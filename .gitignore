@@ -58,3 +58,25 @@ coppeliasim.log
 results/
 *.log
 exports/
+
+# Secrete / chei API LLM (NU se versionează)
+llm_config.local.json
+*.local.json
+.gemini_key
+.env
+
+# Artefacte RL (reproductibile prin antrenare)
+coppeliasim-sim/models/
+
+# Artefacte de debug CoppeliaSim (capturi / dump-uri locale)
+coppeliasim-sim/scene_dump.txt
+coppeliasim-sim/vision_raw.png
+coppeliasim-sim/vision_red_mask.png
+
+# Scripturi de explorare a scenei (brute, locale — funcționalitatea e în build_map.py + src/rl/)
+coppeliasim-sim/capture_vision.py
+coppeliasim-sim/debug_scene.py
+coppeliasim-sim/introspect_arena.py
+coppeliasim-sim/list_objects.py
+coppeliasim-sim/measure_bot.py
+coppeliasim-sim/test_motors.py

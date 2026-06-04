@@ -2,10 +2,13 @@
 PyQt6>=6.6.0
 numpy>=1.26.0
 matplotlib>=3.8.0
-requests>=2.31.0
+requests>=2.31.0  # încărcare date de pe GitHub + asistent AI (Google Gemini, REST)
 
 # ===== Componenta CoppeliaSim (coppeliasim-sim) =====
 coppeliasim-zmqremoteapi-client>=2.0.0
+opencv-python>=4.9.0   # captură Vision_sensor + detecție waypoints (build_map, deploy)
+# numpy + matplotlib (mai jos / sus) sunt folosite și de RL (antrenare + curbă de învățare)
+scipy>=1.11.0          # OPȚIONAL: inflate_obstacles mai rapid; există fallback numpy fără el
 
 # ===== Testare =====
 pytest>=8.0.0

@@ -1,15 +1,23 @@
-# CoppeliaSim Sim — Pioneer P3-DX + A*
+# CoppeliaSim Sim — robot diferențial + A* + Reinforcement Learning
 
-Componenta de simulare robotică: un robot **Pioneer P3-DX** în CoppeliaSim parcurge un mediu cu obstacole folosind algoritmul **A\*** și un controller Python care comunică prin ZMQ Remote API.
+Componenta de simulare robotică: un robot diferențial (`Diff_Drive_Bot`) în CoppeliaSim parcurge labirintul **Arena.ttt**. Robotul ajunge de la START la STOP în două moduri:
+- **A\*** — planificare clasică pe grid (deterministă).
+- **Reinforcement Learning (Q-learning)** — robotul **învață singur** ruta într-un mediu grid rapid, apoi politica învățată este transferată în CoppeliaSim ([detalii mai jos](#reinforcement-learning--robotul-învață-labirintul)).
+
+Controllerul Python comunică cu CoppeliaSim prin ZMQ Remote API.
 
 ## Pornire rapidă
 
-1. **Deschide CoppeliaSim** și încarcă scena `scenes/pioneer_maze.ttt` (vezi [scenes/README.md](scenes/README.md) pentru construcția scenei).
-2. **Pornește simularea** (butonul ▶ din CoppeliaSim).
-3. **Rulează scriptul Python**:
+1. **Deschide CoppeliaSim** și încarcă scena `scenes/Arena.ttt`.
+2. **Generează harta** din geometria pereților (o singură dată, cu scena încărcată):
    ```bash
    cd D:\ProiectIA\coppeliasim-sim
-   python -m src.main --goal 2.0 2.0 --map scenes/map.json --inflate 1
+   python build_map.py            # scrie scenes/arena_auto.json
+   ```
+3. **Pornește simularea** (butonul ▶ din CoppeliaSim).
+4. **Rulează A\*** (drum determinist):
+   ```bash
+   python -m src.main --goal 0.75 0.23 --map scenes/arena_auto.json --inflate 1
    ```
 
 ## Algoritm A* — detalii ([src/algorithms/astar.py](src/algorithms/astar.py))
@@ -84,6 +92,50 @@ scenes/
 | `align_threshold_rad` | 30° | Sub acest unghi robotul accelerează liniar. |
 | `waypoint_tolerance` | 0.12 m | Distanță până la waypoint pentru a trece la următorul. |
 | `final_tolerance` | 0.10 m | Toleranță mai strictă pentru ținta finală. |
+
+## Reinforcement Learning — robotul învață labirintul
+
+În loc să i se dea drumul, robotul **învață singur** ruta de la START la STOP prin **Q-learning tabular**, antrenat într-un mediu grid rapid (headless), apoi politica este transferată în CoppeliaSim.
+
+### De ce antrenare headless?
+
+Antrenarea în CoppeliaSim real-time ar dura ore (fiecare episod rulează în timp fizic). În schimb, mediul `MazeEnv` rulează mii de episoade în câteva secunde pe aceeași hartă (`arena_auto.json`), apoi robotul real execută **o singură dată** drumul învățat.
+
+### Flux complet
+
+```bash
+cd D:\ProiectIA\coppeliasim-sim
+
+# 1. (cu Arena.ttt încărcată) generează harta din pereți
+python build_map.py
+
+# 2. antrenează agentul (headless, ~secunde) — salvează models/q_table.npy + learning_curve.png
+python -m src.rl.train --episodes 2000
+
+# 3. (cu simularea pornită) transferă politica în CoppeliaSim — robotul rezolvă labirintul
+python -m src.rl.deploy --screenshot models/solved_topview.png
+python -m src.rl.deploy --dry-run        # doar afișează drumul învățat, fără robot
+```
+
+### Componente ([src/rl/](src/rl/))
+
+| Fișier | Rol |
+|--------|-----|
+| `maze_env.py` | Mediu grid (stil Gym): stare = celulă, 4 acțiuni, recompense (țintă +10, pas −0.05, coliziune −0.75) |
+| `qlearning.py` | Agent Q-learning tabular: Q(s,a) ← Q(s,a) + α·[r + γ·maxₐ Q(s',a') − Q(s,a)], explorare ε-greedy |
+| `scene_map.py` | Încărcarea hărții + celule start/goal + render ASCII (sursă unică de adevăr) |
+| `train.py` | Bucla de antrenare + curba de învățare + drumul greedy în ASCII |
+| `deploy.py` | Politică → drum de celule → colțuri → waypoints world → `PathExecutor` în CoppeliaSim |
+
+### Recompensă (reward shaping)
+
+| Eveniment | Recompensă | Scop |
+|-----------|-----------:|------|
+| Atinge STOP | +10.0 | Obiectivul |
+| Pas normal | −0.05 | Împinge spre drumul cel mai scurt |
+| Coliziune cu perete | −0.75 | Descurajează ciocnirile |
+
+Robotul învață ruta exactă START→A→B→C→D→E→F→G→H→I→STOP — aceeași cu traseul de referință desenat în scenă, dar **descoperită singur**.
 
 ## Probleme frecvente
 

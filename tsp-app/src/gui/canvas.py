@@ -17,18 +17,19 @@ from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPen
 from PyQt6.QtWidgets import QWidget
 
 from ..core import TSPProblem, Tour
+from . import theme
 
 
 class TourCanvas(QWidget):
     """Suprafață custom-paint pentru vizualizarea TSP."""
 
-    BACKGROUND = QColor("#1e1e2e")
-    CITY_COLOR = QColor("#89b4fa")
-    CITY_BORDER = QColor("#cdd6f4")
-    TOUR_COLOR = QColor("#a6e3a1")
-    BEST_TOUR_COLOR = QColor("#f9e2af")
-    TEXT_COLOR = QColor("#cdd6f4")
-    START_CITY_COLOR = QColor("#f38ba8")
+    BACKGROUND = QColor(theme.VIZ_BG)
+    CITY_COLOR = QColor(theme.VIZ_CITY)
+    CITY_BORDER = QColor(theme.VIZ_CITY_BORDER)
+    TOUR_COLOR = QColor(theme.VIZ_TOUR)
+    BEST_TOUR_COLOR = QColor(theme.VIZ_BEST)
+    TEXT_COLOR = QColor(theme.TEXT)
+    START_CITY_COLOR = QColor(theme.VIZ_START)
 
     PADDING = 30
     CITY_RADIUS = 6

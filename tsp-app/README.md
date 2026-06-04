@@ -79,7 +79,48 @@ src/
 3. **Panou Parametri** — ajustează parametrii (apar dinamic în funcție de algoritm)
 4. **Toolbar → ▶ Rulează** — pornește algoritmul (rulează pe thread separat)
 5. **Canvas** — vizualizează turul curent în timp real
-6. **Toolbar → Export CSV / grafic convergență** — pentru raportul Colab
+6. **Toolbar → 🤖 Asistent AI** — deschide panoul cu LLM (vezi mai jos)
+7. **Toolbar → Export CSV / grafic convergență** — pentru raportul Colab
+
+## Asistent AI (Google Gemini)
+
+Aplicația integrează un asistent LLM prin **Google AI Studio (Gemini)**, accesat din
+toolbar (`🤖 Asistent AI`). Panoul lateral permite:
+
+- **Întrebări libere** despre algoritmi, parametri sau rezultate — cu contextul curent
+  (set de date, algoritm selectat, ultimele rulări) atașat automat.
+- **📊 Analizează performanța** — trimite rezultatele tuturor rulărilor și primește
+  un câștigător, observații și sugestii concrete de îmbunătățire a parametrilor.
+
+Apelurile rulează pe un thread separat (`LLMWorker`), deci interfața rămâne responsive.
+
+### Configurarea cheii API
+
+Cheia **nu** este hardcodată în sursă și **nu** se versionează în Git. Folosește una
+dintre variantele:
+
+1. **Fișier local** (recomandat) — copiază [llm_config.example.json](llm_config.example.json)
+   ca `llm_config.local.json` în folderul `tsp-app/` și completează:
+   ```json
+   {
+     "api_key": "AIza...",
+     "model": "gemini-2.5-flash-lite"
+   }
+   ```
+   (`*.local.json` este în `.gitignore`.)
+2. **Variabile de mediu** — `GEMINI_API_KEY` (sau `GOOGLE_API_KEY`) și opțional `GEMINI_MODEL`.
+
+Cheia se obține gratuit de la <https://aistudio.google.com/apikey>. Modelul implicit
+`gemini-2.5-flash-lite` funcționează pe nivelul gratuit; `gemini-2.0-flash` poate avea
+cota free-tier 0 pe unele proiecte.
+
+Codul LLM trăiește în [src/llm/](src/llm/): `config.py` (încărcare cheie),
+`gemini_client.py` (client REST), `analyst.py` (construirea prompt-urilor).
+
+### Stil vizual
+
+Întreaga interfață folosește o paletă caldă (gri + portocaliu) centralizată în
+[src/gui/theme.py](src/gui/theme.py) — un singur loc de editat pentru a schimba tema.
 
 ## Adăugarea unui algoritm nou
 

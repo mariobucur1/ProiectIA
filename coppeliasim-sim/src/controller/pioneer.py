@@ -25,10 +25,10 @@ from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 
 @dataclass
 class PioneerSpec:
-    """Parametri fizici Pioneer P3-DX."""
-    wheel_radius: float = 0.0975
-    wheel_base: float = 0.381
-    max_wheel_speed: float = 2.0
+    """Parametri fizici robot diferential (default: Diff_Drive_Bot din Arena.ttt)."""
+    wheel_radius: float = 0.04        # m — masurat din scena
+    wheel_base: float = 0.21          # m — distanta intre roti
+    max_wheel_speed: float = 8.0      # rad/s — Diff_Drive_Bot suporta viteze mai mari decat Pioneer
 
 
 class PioneerController:
@@ -44,9 +44,9 @@ class PioneerController:
         controller.stop_simulation()
     """
 
-    LEFT_MOTOR = "/PioneerP3DX/leftMotor"
-    RIGHT_MOTOR = "/PioneerP3DX/rightMotor"
-    ROBOT_HANDLE = "/PioneerP3DX"
+    LEFT_MOTOR = "/Diff_Drive_Bot/left_joint"
+    RIGHT_MOTOR = "/Diff_Drive_Bot/right_joint"
+    ROBOT_HANDLE = "/Diff_Drive_Bot"
 
     def __init__(
         self,
@@ -70,6 +70,12 @@ class PioneerController:
         self._left_handle = self._sim.getObject(self.LEFT_MOTOR)
         self._right_handle = self._sim.getObject(self.RIGHT_MOTOR)
         self._robot_handle = self._sim.getObject(self.ROBOT_HANDLE)
+
+    @property
+    def sim(self):
+        """Obiectul `sim` ZMQ (pentru operații avansate: senzori, capturi)."""
+        self._ensure_connected()
+        return self._sim
 
     def disconnect(self) -> None:
         self._client = None

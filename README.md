@@ -2,7 +2,10 @@
 
 Proiect final pentru disciplina **Inteligență Artificială** — Universitatea Ștefan cel Mare din Suceava (USV).
 
-Proiectul cuprinde două componente integrate, evaluate ca o lucrare unitară (50% din nota finală — *NP*).
+Proiectul cuprinde două componente integrate:
+
+1. **`tsp-app/`** — aplicație GUI (PyQt6) pentru **Problema Comis-Voiajorului (TSP)** cu 6 algoritmi, vizualizare live și un **asistent AI (Google Gemini)** pentru analiză de performanță și întrebări în timp real.
+2. **`coppeliasim-sim/`** — robot diferențial în **CoppeliaSim** care rezolvă un **labirint** prin **A\*** (planificare clasică) **și prin Reinforcement Learning (Q-learning)** — robotul învață singur ruta.
 
 ---
 
@@ -10,122 +13,118 @@ Proiectul cuprinde două componente integrate, evaluate ca o lucrare unitară (5
 
 ```
 ProiectIA/
-├── tsp-app/              # Componenta 1: Aplicație Python GUI pentru Comis-Voiajor (TSP)
-│   ├── src/              # Cod sursă (algoritmi, GUI, I/O)
-│   ├── data/             # Seturi de date (orașe) — locale + descărcate de pe GitHub
-│   ├── tests/            # Teste unitare
-│   └── README.md
-├── coppeliasim-sim/      # Componenta 2: Simulare CoppeliaSim — Pioneer P3-DX + A*
-│   ├── src/              # Controller Python + algoritm A*
-│   ├── scenes/           # Scene CoppeliaSim (.ttt)
-│   ├── tests/            # Teste pentru pathfinding
-│   └── README.md
-├── notebooks/            # Jupyter / Google Colab — raport comparativ algoritmi
-├── docs/                 # Documentație tehnică, diagrame, prezentare
-├── requirements.txt      # Dependențe Python comune
-└── README.md             # Acest fișier
+├── tsp-app/                    # Componenta 1 — TSP (PyQt6)
+│   ├── src/
+│   │   ├── algorithms/         # 6 algoritmi (backtracking, HC, SA, GA, ACO, NN)
+│   │   ├── core/               # City, Tour, TSPProblem, AlgorithmResult
+│   │   ├── gui/                # Ferestre PyQt6 + theme.py + assistant_panel.py (AI)
+│   │   ├── io/                 # Loaders (CSV/JSON/URL) + exporters
+│   │   └── llm/                # Integrare Google Gemini (config, client, analist)
+│   ├── data/                   # Seturi de date (orașe)
+│   ├── llm_config.example.json # Model pentru cheia API (copiază → llm_config.local.json)
+│   └── tests/
+├── coppeliasim-sim/            # Componenta 2 — robot + labirint
+│   ├── src/
+│   │   ├── world/grid_map.py   # Discretizare în grid de ocupare
+│   │   ├── algorithms/astar.py # A* (planificare clasică)
+│   │   ├── controller/         # Controller ZMQ + PathExecutor
+│   │   └── rl/                 # Reinforcement Learning (MazeEnv, Q-learning, train, deploy)
+│   ├── scenes/Arena.ttt        # Scena labirintului
+│   ├── build_map.py            # Generează grila din pereți → scenes/arena_auto.json
+│   └── tests/
+├── notebooks/                  # Jupyter / Colab — raport comparativ
+├── docs/                       # Documentație ([setup.md](docs/setup.md) = ghid instalare)
+├── requirements.txt            # Dependențe comune
+└── README.md
 ```
 
 ---
 
 ## Componenta 1 — Aplicație TSP (`tsp-app/`)
 
-Aplicație Python cu interfață grafică **PyQt6** care rezolvă **Problema Comis-Voiajorului** prin 6 algoritmi diferiți:
+Aplicație PyQt6 care rezolvă TSP prin 6 algoritmi:
 
 | # | Algoritm | Tip | Optimal? |
 |---|----------|-----|----------|
 | 1 | Backtracking recursiv | Exact | ✅ Da |
-| 2 | Hill Climbing | Heuristic local | ❌ Local optimum |
+| 2 | Hill Climbing | Heuristic local | ❌ Optim local |
 | 3 | Simulated Annealing | Stochastic | ⚠️ Probabilistic |
 | 4 | Algoritm Genetic | Evolutiv | ⚠️ Probabilistic |
-| 5 | Ant Colony Optimization | Bio-inspirat (extra) | ⚠️ Probabilistic |
+| 5 | Ant Colony Optimization | Bio-inspirat | ⚠️ Probabilistic |
 | 6 | Nearest Neighbor | Greedy baseline | ❌ Aproximare rapidă |
 
-**Funcționalități GUI:**
-- Selectarea algoritmului din meniu
-- Configurarea parametrilor de rulare (popsize, generații, temperatură etc.)
-- Vizualizare în timp real a evoluției soluției
-- Încărcare date din fișiere **locale** (CSV/JSON) sau de pe **GitHub** (raw URL)
-- Export rezultate (CSV + grafic) pentru raportul Colab
+**Funcționalități:** selectare algoritm + parametri dinamici, vizualizare live a turului și a convergenței, încărcare date locale (CSV/JSON) sau de pe GitHub, export CSV + grafic.
+
+**🤖 Asistent AI (Google Gemini):** panou lateral pentru întrebări libere despre algoritmi/parametri și buton „Analizează performanța" care trimite rezultatele rulărilor și primește observații + sugestii. Stil vizual cald (gri + portocaliu) centralizat în [`src/gui/theme.py`](tsp-app/src/gui/theme.py). Vezi [tsp-app/README.md](tsp-app/README.md).
 
 ---
 
-## Componenta 2 — Simulare CoppeliaSim (`coppeliasim-sim/`)
+## Componenta 2 — Robot + labirint (`coppeliasim-sim/`)
 
-Simulare a robotului **Pioneer P3-DX** într-un mediu cu obstacole, controlat de un script Python care implementează algoritmul **A\*** pentru navigare optimă spre o țintă.
+Robot diferențial (`Diff_Drive_Bot`) în scena `Arena.ttt` care ajunge de la START la STOP în două moduri:
 
-**Componente tehnice:**
-- Discretizarea scenei într-un grid (rețea de celule)
-- Reprezentarea hărții ca graf (noduri = celule libere, muchii = tranziții posibile)
-- Euristică: **Distanța Euclidiană** (admisibilă, robotul se poate roti liber)
-- Comunicare Python ↔ CoppeliaSim prin ZMQ Remote API
-- Traducerea drumului A* în comenzi de viteză diferențială pentru roți
+- **A\*** — planificare optimă pe gridul de ocupare (euristică euclidiană, admisibilă).
+- **Reinforcement Learning (Q-learning)** — robotul **învață singur** ruta într-un mediu grid rapid (headless), apoi politica este transferată în CoppeliaSim, unde robotul fizic parcurge drumul.
+
+Comunicare Python ↔ CoppeliaSim prin **ZMQ Remote API**. Vezi [coppeliasim-sim/README.md](coppeliasim-sim/README.md).
 
 ---
 
 ## Setup rapid
 
-### 1. Clonează repo-ul
+> Ghid detaliat de instalare (Python, CoppeliaSim, VS Code, Git): **[docs/setup.md](docs/setup.md)**.
 
 ```bash
-git clone https://github.com/<user>/ProiectIA.git
+git clone https://github.com/mariobucur1/ProiectIA.git
 cd ProiectIA
-```
-
-### 2. Creează mediu virtual
-
-```bash
 python -m venv .venv
 .venv\Scripts\activate          # Windows
-source .venv/bin/activate       # Linux/Mac
-```
-
-### 3. Instalează dependențele
-
-```bash
+# source .venv/bin/activate     # Linux/Mac
 pip install -r requirements.txt
 ```
 
-### 4. Rulează aplicația TSP
+### Rulează aplicația TSP
 
 ```bash
 cd tsp-app
 python -m src.main
 ```
 
-### 5. Rulează simularea CoppeliaSim
+Pentru asistentul AI: copiază `llm_config.example.json` → `llm_config.local.json` și pune cheia ta de la [Google AI Studio](https://aistudio.google.com/apikey) (fișierul `.local.json` este în `.gitignore`, nu ajunge în Git).
 
-1. Deschide CoppeliaSim și încarcă scena `coppeliasim-sim/scenes/pioneer_maze.ttt`
-2. Pornește simularea (butonul Play)
-3. În alt terminal:
+### Rulează simularea CoppeliaSim
+
+1. Deschide CoppeliaSim și încarcă `coppeliasim-sim/scenes/Arena.ttt`, apoi pornește simularea (▶).
+2. Generează harta (o singură dată, cu scena încărcată) și rulează:
 
 ```bash
 cd coppeliasim-sim
-python -m src.main
+python build_map.py                                   # scenes/arena_auto.json
+
+# Varianta A* (drum determinist)
+python -m src.main --goal 0.75 0.23 --map scenes/arena_auto.json --inflate 1
+
+# Varianta Reinforcement Learning
+python -m src.rl.train --episodes 2000                # antrenează (headless)
+python -m src.rl.deploy --screenshot models/solved_topview.png   # robotul rezolvă labirintul
 ```
 
 ---
 
-## Tehnologii utilizate
+## Tehnologii
 
 | Tehnologie | Scop |
 |-----------|------|
 | Python 3.10+ | Limbaj principal |
 | PyQt6 | Interfață grafică TSP |
-| NumPy | Calcule numerice / matrice de distanțe |
-| Matplotlib | Grafice de convergență |
-| CoppeliaSim | Simulator robotic |
-| `coppeliasim-zmqremoteapi-client` | Comunicare Python ↔ CoppeliaSim |
+| NumPy / Matplotlib | Calcule numerice + grafice |
+| Google Gemini (REST) | Asistent AI în tsp-app |
+| CoppeliaSim + `coppeliasim-zmqremoteapi-client` | Simulator robotic |
+| OpenCV | Captură Vision_sensor + detecție waypoints |
 | pytest | Teste unitare |
 
 ---
 
-## Echipă
+## Echipă și licență
 
-Proiect realizat în echipă (max. 3 studenți) — vezi [docs/team.md](docs/team.md).
-
----
-
-## Licență
-
-Proiect educațional. Cod sursă disponibil sub licență MIT.
+Proiect realizat în echipă — vezi [docs/team.md](docs/team.md). Cod sursă sub licență MIT (vezi [LICENSE](LICENSE)).

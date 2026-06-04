@@ -1,19 +1,4 @@
-"""
-Entry point pentru simularea CoppeliaSim — navigare Pioneer P3-DX cu A*.
 
-Workflow:
-1. Construiește un GridMap din scena cunoscută (cu obstacole hard-coded
-   sau încărcate din JSON — vezi `scenes/map.json` ca exemplu).
-2. Conectează-te la CoppeliaSim prin ZMQ Remote API.
-3. Citește poziția curentă a robotului → start_cell.
-4. Citește o țintă (din argumente CLI sau hard-coded) → goal_cell.
-5. Rulează A* → listă de waypoints world.
-6. PathExecutor urmează waypoints folosind control P.
-
-Pornește întâi CoppeliaSim cu scena `scenes/pioneer_maze.ttt`, apoi:
-    cd D:\\ProiectIA\\coppeliasim-sim
-    python -m src.main --goal 4.0 3.0
-"""
 
 from __future__ import annotations
 
@@ -37,14 +22,7 @@ def build_default_map() -> GridMap:
 
 
 def load_map_from_json(path: Path) -> GridMap:
-    """
-    Încarcă o hartă din JSON. Format așteptat:
-        {
-          "rows": 20, "cols": 20, "cell_size": 0.25,
-          "origin": [-2.5, -2.5],
-          "obstacles": [[r1, c1, r2, c2], ...]
-        }
-    """
+
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
     gm = GridMap(

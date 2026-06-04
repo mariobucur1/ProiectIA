@@ -32,17 +32,18 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as Navigation
 from matplotlib.figure import Figure
 
 from ..core import AlgorithmResult, TSPProblem, Tour
+from . import theme
 
 
-_BG = "#1e1e2e"
-_BG_DARK = "#181825"
-_FG = "#cdd6f4"
-_GRID = "#45475a"
-_CITY = QColor("#89b4fa")
-_CITY_BORDER = QColor("#cdd6f4")
-_TOUR = QColor("#a6e3a1")
-_BEST = QColor("#f9e2af")
-_START = QColor("#f38ba8")
+_BG = theme.VIZ_BG
+_BG_DARK = theme.VIZ_BG_DARK
+_FG = theme.TEXT
+_GRID = theme.VIZ_GRID
+_CITY = QColor(theme.VIZ_CITY)
+_CITY_BORDER = QColor(theme.VIZ_CITY_BORDER)
+_TOUR = QColor(theme.VIZ_TOUR)
+_BEST = QColor(theme.VIZ_BEST)
+_START = QColor(theme.VIZ_START)
 
 
 class TourGraphicsView(QGraphicsView):
@@ -232,8 +233,8 @@ class VisualizationWindow(QDialog):
         self._figure = Figure(figsize=(5, 4), facecolor=_BG)
         self._ax = self._figure.add_subplot(111)
         self._configure_axes()
-        (self._line,) = self._ax.plot([], [], color="#a6e3a1", linewidth=1.5, label="Lungime curentă")
-        (self._best_line,) = self._ax.plot([], [], color="#f9e2af", linewidth=1.2, linestyle="--", label="Cea mai bună")
+        (self._line,) = self._ax.plot([], [], color=theme.VIZ_TOUR, linewidth=1.5, label="Lungime curentă")
+        (self._best_line,) = self._ax.plot([], [], color=theme.ACCENT, linewidth=1.4, linestyle="--", label="Cea mai bună")
         self._ax.legend(loc="upper right", facecolor=_BG_DARK, edgecolor=_GRID, labelcolor=_FG)
 
         self._canvas = FigureCanvas(self._figure)
@@ -261,10 +262,10 @@ class VisualizationWindow(QDialog):
             QDialog {{ background-color: {_BG}; color: {_FG}; }}
             QLabel, QCheckBox {{ color: {_FG}; }}
             QPushButton {{
-                background-color: #313244; color: {_FG};
-                border: 1px solid {_GRID}; padding: 6px 10px; border-radius: 4px;
+                background-color: {theme.SURFACE}; color: {_FG};
+                border: 1px solid {theme.BORDER}; padding: 6px 10px; border-radius: 6px;
             }}
-            QPushButton:hover {{ background-color: {_GRID}; }}
+            QPushButton:hover {{ background-color: {theme.SURFACE_HI}; }}
             QToolBar {{ background-color: {_BG_DARK}; border: none; }}
             """
         )

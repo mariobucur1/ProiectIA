@@ -27,6 +27,7 @@ from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
     QComboBox,
+    QDockWidget,
     QFileDialog,
     QHBoxLayout,
     QInputDialog,
@@ -54,6 +55,8 @@ from ..io import (
     load_cities_from_json,
     load_cities_from_url,
 )
+from . import theme
+from .assistant_panel import AssistantPanel
 from .canvas import TourCanvas
 from .parameter_panel import ParameterPanel
 from .visualization_window import VisualizationWindow
@@ -99,12 +102,28 @@ class MainWindow(QMainWindow):
         self._viz_window: Optional[VisualizationWindow] = None
 
         self._build_ui()
-        self._apply_dark_theme()
+        self._apply_theme()
 
     def _build_ui(self) -> None:
         self._build_toolbar()
         self._build_central()
+        self._build_assistant_dock()
         self._build_status_bar()
+
+    def _build_assistant_dock(self) -> None:
+        self._assistant = AssistantPanel()
+        self._assistant_dock = QDockWidget("Asistent AI", self)
+        self._assistant_dock.setObjectName("assistant_dock")
+        self._assistant_dock.setWidget(self._assistant)
+        self._assistant_dock.setAllowedAreas(
+            Qt.DockWidgetArea.RightDockWidgetArea | Qt.DockWidgetArea.LeftDockWidgetArea
+        )
+        self._assistant_dock.setMinimumWidth(340)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._assistant_dock)
+        self._assistant_dock.hide()
+        # sincronizează butonul din toolbar cu vizibilitatea dock-ului
+        self._assistant_dock.visibilityChanged.connect(self._assistant_action.setChecked)
+        self._assistant.set_current_algorithm(self._algorithm_combo.currentText())
 
     def _build_toolbar(self) -> None:
         toolbar = QToolBar("Acțiuni principale")
@@ -151,6 +170,11 @@ class MainWindow(QMainWindow):
         viz_action.triggered.connect(self._on_open_visualization)
         toolbar.addAction(viz_action)
 
+        self._assistant_action = QAction("🤖 Asistent AI", self)
+        self._assistant_action.setCheckable(True)
+        self._assistant_action.triggered.connect(self._on_toggle_assistant)
+        toolbar.addAction(self._assistant_action)
+
         toolbar.addSeparator()
 
         export_csv = QAction("Export CSV rezultate", self)
@@ -182,7 +206,10 @@ class MainWindow(QMainWindow):
 
         self._results_label = QLabel("Niciun rezultat încă.")
         self._results_label.setWordWrap(True)
-        self._results_label.setStyleSheet("padding: 8px; background: #313244; border-radius: 4px;")
+        self._results_label.setStyleSheet(
+            f"padding: 8px; background: {theme.SURFACE}; "
+            f"border: 1px solid {theme.BORDER}; border-radius: 6px;"
+        )
         sidebar_layout.addWidget(self._results_label)
 
         sidebar.setMinimumWidth(320)
@@ -213,22 +240,21 @@ class MainWindow(QMainWindow):
         status.addWidget(self._status_label, 1)
         status.addPermanentWidget(self._progress_bar)
 
-    def _apply_dark_theme(self) -> None:
-        self.setStyleSheet(
-            """
-            QMainWindow, QWidget { background-color: #1e1e2e; color: #cdd6f4; }
-            QPushButton, QToolBar { background-color: #313244; color: #cdd6f4; border: 1px solid #45475a; padding: 6px; border-radius: 4px; }
-            QPushButton:hover, QToolButton:hover { background-color: #45475a; }
-            QComboBox, QSpinBox, QDoubleSpinBox { background-color: #313244; color: #cdd6f4; border: 1px solid #45475a; padding: 4px; border-radius: 4px; }
-            QGroupBox { border: 1px solid #45475a; margin-top: 8px; padding-top: 12px; border-radius: 6px; }
-            QGroupBox::title { subcontrol-origin: margin; left: 8px; padding: 0 4px; }
-            QStatusBar { background-color: #181825; }
-            QScrollArea { border: none; }
-            """
-        )
+    def _apply_theme(self) -> None:
+        self.setStyleSheet(theme.app_stylesheet())
 
     def _on_algorithm_changed(self, name: str) -> None:
         self._parameter_panel.set_algorithm(name)
+        if hasattr(self, "_assistant"):
+            self._assistant.set_current_algorithm(name)
+
+    def _on_toggle_assistant(self, checked: bool) -> None:
+        self._assistant_dock.setVisible(checked)
+        if checked:
+            self._assistant.set_context(
+                self._last_results, self._problem, self._algorithm_combo.currentText()
+            )
+            self._assistant_dock.raise_()
 
     def _on_load_csv(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -293,6 +319,10 @@ class MainWindow(QMainWindow):
         self._status_label.setText(
             f"Încărcat: {problem.name} ({problem.n} orașe)."
         )
+        if hasattr(self, "_assistant"):
+            self._assistant.set_context(
+                self._last_results, problem, self._algorithm_combo.currentText()
+            )
 
     def _ensure_viz_window(self) -> VisualizationWindow:
         if self._viz_window is None:
@@ -373,6 +403,10 @@ class MainWindow(QMainWindow):
         self._status_label.setText(
             f"Gata: {result.algorithm_name} — lungime {result.best_length:.2f} ({result.elapsed_seconds:.2f}s)"
         )
+        if hasattr(self, "_assistant"):
+            self._assistant.set_context(
+                self._last_results, self._problem, self._algorithm_combo.currentText()
+            )
         self._cleanup_worker()
 
     def _on_error(self, message: str) -> None:
