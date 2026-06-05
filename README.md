@@ -127,4 +127,6 @@ python -m src.rl.deploy --screenshot models/solved_topview.png   # robotul rezol
 
 ## Echipă și licență
 
-Proiect realizat în echipă — vezi [docs/team.md](docs/team.md). Cod sursă sub licență MIT (vezi [LICENSE](LICENSE)).
+Proiect realizat de **Mario Bucur**, **Timu Iustin** și **Marjina Daniela** (USV — disciplina Inteligență Artificială). Detalii în [docs/team.md](docs/team.md).
+
+Cod sursă sub licență MIT (vezi [LICENSE](LICENSE)).
